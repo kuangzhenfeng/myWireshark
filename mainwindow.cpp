@@ -2,6 +2,7 @@
 #include "./ui_mainwindow.h"
 #include <QString>
 #include <QDebug>
+#include "commonDebug.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -9,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     showNetworkDevices();
+    m_myPcap.setCurDevice(11);   // kzf for test
     static bool bStart = false;
     connect(ui->actionrun_and_stop, &QAction::triggered, this, [=](){
         bStart = !bStart;
@@ -60,7 +62,7 @@ void MainWindow::on_comboBox_currentIndexChanged(int index)
         return;
     }
     m_myPcap.setCurDevice(index - 1);
-    qDebug(m_myPcap.getCurDeviceDescription().toStdString().data());
+    DEBUG("%s", m_myPcap.getCurDeviceDescription().toStdString().data());
     return;
 }
 

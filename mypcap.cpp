@@ -1,5 +1,6 @@
 #include "mypcap.h"
 #include <QDebug>
+#include "commonDebug.h"
 
 MyPcap::MyPcap()
 {
@@ -21,7 +22,7 @@ int MyPcap::getAllDevicesDescription(QStringList &descriptionList)
     devNum = pcap_findalldevs(&m_pAllDevice, m_errBuf);
     if(-1 == devNum)
     {
-        qDebug() << "error: " << m_errBuf;
+        DEBUG("error: %s", m_errBuf);
         descriptionList = QStringList();
         return devNum;
     }
@@ -43,7 +44,7 @@ void MyPcap::setCurDevice(int index)
 
 int MyPcap::capture()
 {
-    qDebug("start capture");
+    DEBUG("curDevice=%s", m_pCurDevice->description);
     if(!m_pCurDevice)
     {
         return -1;
@@ -57,7 +58,7 @@ int MyPcap::capture()
     }
     if(pcap_datalink(m_pPcap) != DLT_EN10MB)
     {
-        qDebug("Unsupported protocol, protocol=%d", pcap_datalink(m_pPcap));
+        qDebug("Unsupported protocol, curDevice=%s protocol=%d", m_pCurDevice->description, pcap_datalink(m_pPcap));
         pcap_close(m_pPcap);
         m_pCurDevice = nullptr;
         m_pPcap = nullptr;
@@ -70,7 +71,7 @@ int MyPcap::capture()
 
 int MyPcap::stopCapture()
 {
-    qDebug("stop capture");
+    DEBUG("curDevice=%s", m_pCurDevice->description);
     if(!m_pPcap)
     {
         return -1;
@@ -103,6 +104,72 @@ void MyPcap::run()
         time_t ts = m_pHeader->ts.tv_sec;
         localtime_s(&localTime, &ts);
         strftime(timeString, sizeof(timeString), "%H:%M:%S", &localTime);
-        qDebug() << timeString;
+        DEBUG("[%s] len=%u", timeString, m_pHeader->len);
+        for(int i = 0; i < m_pHeader->len; ++i)
+        {
+            printf("%02X ", m_pktData[i]);
+        }
+        printf("\n");
+        unsigned char desMac[6] = {0};
+        unsigned char srcMac[6] = {0};
+        unsigned char ipType[2] = {0};
+        unsigned char skip[9] = {0};
+        unsigned char protocol[1] = {0};
+        unsigned char headerChecksum[2] = {0};
+        unsigned char srcAddress[4] = {0};
+        unsigned char desAddress[4] = {0};
+        unsigned char srcPort[2] = {0};
+        unsigned char desPort[2] = {0};
+        int count = 0;
+        for(int i = 0; i < 6; ++i)
+        {
+            desMac[i] = m_pktData[count++];
+        }
+        for(int i = 0; i < 6; ++i)
+        {
+            srcMac[i] = m_pktData[count++];
+        }
+        for(int i = 0; i < 2; ++i)
+        {
+            ipType[i] = m_pktData[count++];
+        }
+        for(int i = 0; i < 9; ++i)
+        {
+            skip[i] = m_pktData[count++];
+        }
+        for(int i = 0; i < 1; ++i)
+        {
+            protocol[i] = m_pktData[count++];
+        }
+        for(int i = 0; i < 2; ++i)
+        {
+            headerChecksum[i] = m_pktData[count++];
+        }
+        for(int i = 0; i < 4; ++i)
+        {
+            srcAddress[i] = m_pktData[count++];
+        }
+        for(int i = 0; i < 4; ++i)
+        {
+            desAddress[i] = m_pktData[count++];
+        }
+        for(int i = 0; i < 2; ++i)
+        {
+            srcPort[i] = m_pktData[count++];
+        }
+        for(int i = 0; i < 2; ++i)
+        {
+            desPort[i] = m_pktData[count++];
+        }
+        DEBUG("desMac=%02X:%02X:%02X:%02X:%02X:%02X", desMac[0], desMac[1], desMac[2], desMac[3], desMac[4], desMac[5]);
+        DEBUG("srcMac=%02X:%02X:%02X:%02X:%02X:%02X", srcMac[0], srcMac[1], srcMac[2], srcMac[3], srcMac[4], srcMac[5]);
+        DEBUG("ipType=0x%02X%02X", ipType[0], ipType[1]);
+        DEBUG("skip");
+        DEBUG("protocol=%d isTCP=%d isUDP=%d", protocol[0], 6 == protocol[0], 17 == protocol[0]);
+        DEBUG("headerChecksum=0x%02X%02X", headerChecksum[0], headerChecksum[1]);
+        DEBUG("srcAddress=%u.%u.%u.%u", srcAddress[0], srcAddress[1], srcAddress[2], srcAddress[3]);
+        DEBUG("desAddress=%u.%u.%u.%u", desAddress[0], desAddress[1], desAddress[2], desAddress[3]);
+        DEBUG("srcPort=%u", ((unsigned int)srcPort[0] << 8) + srcPort[1]);
+        DEBUG("desPort=%u", ((unsigned int)desPort[0] << 8) + desPort[1]);
     }
 }

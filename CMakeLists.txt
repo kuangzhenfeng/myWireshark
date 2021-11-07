@@ -23,6 +23,7 @@ set(PROJECT_SOURCES
         mainwindow.ui
 #        ${TS_FILES}
         resources.qrc
+        commonDebug.h
         mypcap.h
         mypcap.cpp
 )
