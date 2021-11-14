@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include "mypcap.h"
+#include "datapackage.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -21,6 +22,9 @@ public:
 
 private slots:
     void on_comboBox_currentIndexChanged(int index);
+
+public slots:
+    void HandleMessage(DataPackage data);
 
 private:
     Ui::MainWindow *ui;

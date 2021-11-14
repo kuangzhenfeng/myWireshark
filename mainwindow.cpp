@@ -31,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
             ui->comboBox->setEnabled(true);
         }
     });
+    connect(&m_myPcap, &MyPcap::send, this, &MainWindow::HandleMessage);
 }
 
 MainWindow::~MainWindow()
@@ -64,5 +65,10 @@ void MainWindow::on_comboBox_currentIndexChanged(int index)
     m_myPcap.setCurDevice(index - 1);
     DEBUG("%s", m_myPcap.getCurDeviceDescription().toStdString().data());
     return;
+}
+
+void MainWindow::HandleMessage(DataPackage data)
+{
+    qDebug() << data.getTimeStamp() << " " << data.getInfo();
 }
 

@@ -26,6 +26,9 @@ set(PROJECT_SOURCES
         commonDebug.h
         mypcap.h
         mypcap.cpp
+        Format.h
+        datapackage.h
+        datapackage.cpp
 )
 
 ##################### my add start ##########################
@@ -35,7 +38,7 @@ include_directories(
     ${THIRDPARTY_DIR}/npcap-sdk-1.11/Include
 )
 link_directories(
-    ${THIRDPARTY_DIR}/npcap-sdk-1.11/Lib
+    ${THIRDPARTY_DIR}/npcap-sdk-1.11/Lib/x64
 )
 ##################### my add end ############################
 
@@ -67,7 +70,7 @@ else()
 endif()
 
 ##################### my add start ##########################
-target_link_libraries(myWireshark PRIVATE Packet wpcap)
+target_link_libraries(myWireshark PRIVATE Packet wpcap ws2_32)
 
 ##################### my add end ############################
 

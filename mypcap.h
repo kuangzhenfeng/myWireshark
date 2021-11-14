@@ -4,6 +4,7 @@
 #include <QString>
 #include <QThread>
 #include "pcap.h"
+#include "datapackage.h"
 
 
 class MyPcap: public QThread
@@ -17,6 +18,10 @@ public:
     int capture();
     int stopCapture();
     void run() override;
+    int ethernetPackageHandle(const u_char *pkgContent, QString &info);
+
+signals:
+    void send(DataPackage data);
 
 private:
     pcap_if_t *m_pAllDevice;            // 所有网卡设备

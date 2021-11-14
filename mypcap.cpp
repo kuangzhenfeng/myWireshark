@@ -1,5 +1,6 @@
 #include "mypcap.h"
 #include <QDebug>
+#include <winsock2.h>
 #include "commonDebug.h"
 
 MyPcap::MyPcap()
@@ -105,6 +106,21 @@ void MyPcap::run()
         localtime_s(&localTime, &ts);
         strftime(timeString, sizeof(timeString), "%H:%M:%S", &localTime);
         DEBUG("[%s] len=%u", timeString, m_pHeader->len);
+
+        QString info = "";
+        int type = ethernetPackageHandle(m_pktData, info);
+        if(type)
+        {
+            DataPackage data;
+            int len = m_pHeader->len;
+            data.setInfo(info);
+            data.setDataLength(len);
+            data.setTimeStamp(timeString);
+            emit send(data);
+        }
+
+
+#if 1
         for(int i = 0; i < m_pHeader->len; ++i)
         {
             printf("%02X ", m_pktData[i]);
@@ -171,5 +187,29 @@ void MyPcap::run()
         DEBUG("desAddress=%u.%u.%u.%u", desAddress[0], desAddress[1], desAddress[2], desAddress[3]);
         DEBUG("srcPort=%u", ((unsigned int)srcPort[0] << 8) + srcPort[1]);
         DEBUG("desPort=%u", ((unsigned int)desPort[0] << 8) + desPort[1]);
+#endif
+    }
+}
+
+int MyPcap::ethernetPackageHandle(const u_char *pkgContent, QString &info)
+{
+    ETHER_HEADER *ethenet;
+    u_short contentType;
+    ethenet = (ETHER_HEADER *)pkgContent;
+    contentType = ntohs(ethenet->ether_type);
+    switch(contentType)
+    {
+        case 0x0800:    // ip
+        {
+            info = "ip";
+            return 1;
+        }
+        case 0x806:     // arp
+        {
+            info = "rap";
+            return 1;
+        }
+        default:
+            return 0;
     }
 }
