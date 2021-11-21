@@ -19,11 +19,17 @@ public:
     int stopCapture();
     void run() override;
     int ethernetPackageHandle(const u_char *pkgContent, QString &info);
+    int ipPackageHandle(const u_char *pkgContent, int &ipPackage);
+    int tcpPackageHandle(const u_char *pkgContent, QString &info, int ipPackage);
+    int udpPackageHandle(const u_char *pkgContent, QString &info);
+    QString arpPackageHandle(const u_char *pkgContent);
 
 signals:
     void send(DataPackage data);
 
 private:
+    QString byteToString(u_char *str, int size);
+
     pcap_if_t *m_pAllDevice;            // 所有网卡设备
     pcap_if_t *m_pCurDevice;            // 当前网卡设备
     pcap_t *m_pPcap;                    // 设备描述符

@@ -65,15 +65,21 @@ QString DataPackage::getPackageType()
     }
 }
 
-QString DataPackage::byteToString(char *str, int size)
+QString DataPackage::byteToString(u_char *str, int size)
 {
     QString res = "";
     for(int i = 0; i < size; ++i)
     {
         char high = str[i] >> 4;
+        if(high < 0x0A)
+            high += '0';
+        else
+            high += 'A' - 0x0A;
         char low = str[i] & 0x0F;
-        high += '0';
-        low += '0';
+        if(low < 0x0A)
+            low += '0';
+        else
+            low += 'A' - 0x0A;
         res.append(high);
         res.append(low);
     }

@@ -105,7 +105,7 @@ void MyPcap::run()
         time_t ts = m_pHeader->ts.tv_sec;
         localtime_s(&localTime, &ts);
         strftime(timeString, sizeof(timeString), "%H:%M:%S", &localTime);
-        DEBUG("[%s] len=%u", timeString, m_pHeader->len);
+        // DEBUG("[%s] len=%u", timeString, m_pHeader->len);
 
         QString info = "";
         int type = ethernetPackageHandle(m_pktData, info);
@@ -120,7 +120,7 @@ void MyPcap::run()
         }
 
 
-#if 1
+#if 0
         for(int i = 0; i < m_pHeader->len; ++i)
         {
             printf("%02X ", m_pktData[i]);
@@ -201,15 +201,169 @@ int MyPcap::ethernetPackageHandle(const u_char *pkgContent, QString &info)
     {
         case 0x0800:    // ip
         {
-            info = "ip";
-            return 1;
+            int ipPackage = 0;
+            int res = ipPackageHandle(pkgContent, ipPackage);
+            if(1 == res)
+            {
+                // icmp
+                info = "ICMP";
+                return 2;
+            }
+            else if(6 == res)
+            {
+                // tcp
+                return tcpPackageHandle(pkgContent, info, ipPackage);
+            }
+            else if(17 == res)
+            {
+                // udp
+                return udpPackageHandle(pkgContent, info);
+            }
+            break;
         }
         case 0x806:     // arp
         {
-            info = "rap";
+            info = arpPackageHandle(pkgContent);
             return 1;
         }
         default:
             return 0;
     }
+    return 0;
 }
+
+int MyPcap::ipPackageHandle(const u_char *pkgContent, int &ipPackage)
+{
+    IP_HEADER *ip;
+    ip = (IP_HEADER *)(pkgContent + 14);
+    int protocol = ip->protocol;
+    ipPackage = ntohs(ip->total_length - ((ip->versiosn_head_length & 0x0F) * 4));
+    return protocol;
+}
+
+int MyPcap::tcpPackageHandle(const u_char *pkgContent, QString &info, int ipPackage)
+{
+    TCP_HEADER *tcp;
+    tcp = (TCP_HEADER *)(pkgContent + 14 + 20);
+    u_short src = ntohs(tcp->src_port);
+    u_short des = ntohs(tcp->des_port);
+
+    QString sendProtocol = "";
+    QString recvProtocol = "";
+
+    int type = 3;
+    int tcpHeaderLen = (tcp->header_length >> 4) * 4;
+    int tcpLoader = ipPackage - tcpHeaderLen;
+    if(443 == src)
+    {
+        sendProtocol = "(https)";
+    }
+    else if(443 == des)
+    {
+        recvProtocol = "(https)";
+    }
+    info += QString::number(src) + sendProtocol + "->" + QString::number(des) + recvProtocol;
+
+    QString flag = "";
+    if(tcp->flags & 0x08) flag += "PSH,";
+    if(tcp->flags & 0x10) flag += "ACK,";
+    if(tcp->flags & 0x02) flag += "SYN,";
+    if(tcp->flags & 0x20) flag += "URG,";
+    if(tcp->flags & 0x01) flag += "FIN,";
+    if(tcp->flags & 0x04) flag += "RST,";
+    if(flag != "")
+    {
+        flag = flag.left(flag.length() - 1);
+        info += "[" + flag + "]";
+    }
+
+    u_int sequence = ntohl(tcp->sequence);
+    u_int ack = ntohl(tcp->ack);
+    u_int windowSize = ntohl(tcp->window_size);
+
+    info += " seq=" + QString::number(sequence) + "ack=" + QString::number(ack) + "win=" + QString::number(windowSize) + "len=" + QString::number(tcpLoader);
+
+    return type;
+}
+
+int MyPcap::udpPackageHandle(const u_char *pkgContent, QString &info)
+{
+    UDP_HEADER *udp;
+    udp = (UDP_HEADER *)(pkgContent + 14 + 20);
+    u_short src = ntohs(udp->src_port);
+    u_short des = ntohs(udp->des_port);
+    if(53 == src || 53 == des)
+    {
+        // DNS
+        return 5;
+    }
+    QString res = QString::number(src) + "->" + QString::number(des);
+    u_short dataLen = ntohs(udp->data_length);
+    res += "len=" + QString::number(dataLen);
+    info = res;
+    return 4;
+}
+
+QString MyPcap::arpPackageHandle(const u_char *pkgContent)
+{
+    ARP_HEADER *arp;
+    arp = (ARP_HEADER *)(pkgContent + 14);
+
+    u_short op = ntohs(arp->op_code);
+    QString res = "";
+    QString srcIp = QString::number(arp->src_ip_addr[0]) + "." +
+                    QString::number(arp->src_ip_addr[1]) + "." +
+                    QString::number(arp->src_ip_addr[2]) + "." +
+                    QString::number(arp->src_ip_addr[3]);
+    QString desIp = QString::number(arp->des_ip_addr[0]) + "." +
+                    QString::number(arp->des_ip_addr[1]) + "." +
+                    QString::number(arp->des_ip_addr[2]) + "." +
+                    QString::number(arp->des_ip_addr[3]);
+
+    QString srcEth = byteToString(&arp->src_eth_addr[0], 1) + ":" +
+                     byteToString(&arp->src_eth_addr[1], 1) + ":" +
+                     byteToString(&arp->src_eth_addr[2], 1) + ":" +
+                     byteToString(&arp->src_eth_addr[3], 1) + ":" +
+                     byteToString(&arp->src_eth_addr[4], 1) + ":" +
+                     byteToString(&arp->src_eth_addr[5], 1);
+//    QString desEth = byteToString(&arp->des_eth_addr[0], 1) + "." +
+//                     byteToString(&arp->des_eth_addr[1], 1) + ":" +
+//                     byteToString(&arp->des_eth_addr[2], 1) + ":" +
+//                     byteToString(&arp->des_eth_addr[3], 1) + ":" +
+//                     byteToString(&arp->des_eth_addr[4], 1) + ":" +
+//                     byteToString(&arp->des_eth_addr[5], 1);
+
+    if(1 == op)
+    {
+        // 询问
+        res = "who has " +desIp + "? Tell " +srcIp;
+    }
+    else if(2 == op)
+    {
+        // 应答
+       res = srcIp + " is at " + srcEth;
+    }
+    return res;
+}
+
+QString MyPcap::byteToString(u_char *str, int size)
+{
+    QString res = "";
+    for(int i = 0; i < size; ++i)
+    {
+        char high = str[i] >> 4;
+        if(high < 0x0A)
+            high += '0';
+        else
+            high += 'A' - 0x0A;
+        char low = str[i] & 0x0F;
+        if(low < 0x0A)
+            low += '0';
+        else
+            low += 'A' - 0x0A;
+        res.append(high);
+        res.append(low);
+    }
+    return res;
+}
+

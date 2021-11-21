@@ -26,7 +26,7 @@ public:
     const u_char *m_pktContent;
 
 protected:
-    static QString byteToString(char *str, int size);
+    static QString byteToString(u_char *str, int size);
 
 private:
     u_int m_dataLength;
