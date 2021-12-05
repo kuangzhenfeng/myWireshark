@@ -213,7 +213,7 @@ int MyPcap::ethernetPackageHandle(const u_char *pkgContent, QString &info)
             if(1 == res)
             {
                 // icmp
-                info = "ICMP";
+                info = icmpPackageHandle(pkgContent);
                 return 2;
             }
             else if(6 == res)
@@ -269,6 +269,51 @@ int MyPcap::tcpPackageHandle(const u_char *pkgContent, QString &info, int ipPack
     {
         recvProtocol = "(https)";
     }
+    if(443 == src || 443 == des)
+    {
+        u_char *ssl;
+        ssl = (u_char *)(pkgContent + 14 + 20 + tcpHeaderLen);
+        u_char isTls = *ssl;
+        ++ssl;
+        u_short version = ntohs(*ssl);
+        if(isTls >= 20 && isTls <= 23 && version >=0x0301 && version <= 0x0304)
+        {
+            type = 6;
+            switch(isTls) {
+            case 20:
+                info = "Change Cipher Spec";
+                break;
+            case 21:
+                info = "Alert";
+                break;
+            case 22:
+            {
+                info = "Handshake";
+                ssl += 4;
+                u_char handShakeType = (*ssl);
+                if(1 == handShakeType)
+                {
+                    info += " Client Hello";
+                }
+                else if(2 == handShakeType)
+                {
+                    info += " Server Hello";
+                }
+            }
+                break;
+            case 23:
+                info = "Application Data";
+                break;
+            default:
+                break;
+            }
+        }
+        else
+        {
+            type = 7;
+            info = "Continuation Data";
+        }
+    }
     info += QString::number(src) + sendProtocol + "->" + QString::number(des) + recvProtocol;
 
     QString flag = "";
@@ -302,6 +347,7 @@ int MyPcap::udpPackageHandle(const u_char *pkgContent, QString &info)
     if(53 == src || 53 == des)
     {
         // DNS
+        info = dnsPackageHandle(pkgContent);
         return 5;
     }
     QString res = QString::number(src) + "->" + QString::number(des);
@@ -349,6 +395,73 @@ QString MyPcap::arpPackageHandle(const u_char *pkgContent)
     {
         // 应答
        res = srcIp + " is at " + srcEth;
+    }
+    return res;
+}
+
+QString MyPcap::dnsPackageHandle(const u_char *pkgContent)
+{
+    DNS_HEADER *dns;
+    dns = (DNS_HEADER *)(pkgContent + 14 + 20 + 8);
+    u_short identification = ntohs(dns->identification);
+    u_short type = dns->flags;
+    QString info = "";
+    if((type & 0xf800) == 0x0000)
+    {
+        info = "Standard query";
+    }
+    else if((type & 0xf800) == 0x8000)
+    {
+        info = "Standard query response";
+    }
+    QString name = "";
+    char *domain = (char *)(pkgContent + 14 + 20 + 8 + 12);
+    while(*domain != 0x00)
+    {
+        if(!domain)
+        {
+            break;
+        }
+        int length = *domain;
+        ++domain;
+        for(int i = 0; i < length; ++i)
+        {
+            name += *domain;
+            ++domain;
+        }
+        name += ".";
+    }
+    if(name != "")
+    {
+        // 去掉最后一个'.'
+        name = name.left(name.length() - 1);
+    }
+    return info + " 0x" +QString::number(identification, 16) + " " + name;
+}
+
+QString MyPcap::icmpPackageHandle(const u_char *pkgContent)
+{
+    ICMP_HEADER *icmp;
+    icmp =(ICMP_HEADER *)(pkgContent + 14 + 20);
+    u_char type = icmp->type;
+    u_char code = icmp->code;
+    QString res = "";
+    switch(type)
+    {
+    case 0:
+        if(!code)
+        {
+            res = "Echo response(ping)";
+        }
+        break;
+    case 8:
+        if(!code)
+        {
+            res = "Echo request(ping)";
+        }
+        break;
+    default:
+        break;
     }
     return res;
 }

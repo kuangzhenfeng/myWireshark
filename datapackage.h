@@ -26,10 +26,14 @@ public:
     QString getPackageType();
     QString getSource();
     QString getDestination();
+
     QString getDesMacAddr();
     QString getSrcMacAddr();
+    QString getMacType();
+
     QString getDesIpAddr();
     QString getSrcIpAddr();
+
 
 
 

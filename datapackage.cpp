@@ -41,9 +41,8 @@ const u_char *DataPackage::getPktContent()
 
 void DataPackage::setPktContent(const u_char *pktContent, int size)
 {
-    m_pktContent = (u_char *)malloc(size);        // kzf
+    m_pktContent = (u_char *)malloc(size);        // kzf TODO:使用共享指针优化
     memcpy((char *)m_pktContent, pktContent, size);
-    DEBUG("pktContent=%p", m_pktContent);
 }
 
 void DataPackage::resetPktContent()
@@ -120,7 +119,7 @@ QString DataPackage::getDesMacAddr()
                 + byteToString(addr + 2, 1) + ":"
                 + byteToString(addr + 3, 1) + ":"
                 + byteToString(addr + 4, 1) + ":"
-                + byteToString(addr + 5, 1) + ":";
+                + byteToString(addr + 5, 1);
         if(res == "FF:FF:FF:FF:FF:FF")
             return "FF:FF:FF:FF:FF:FF(Broadcast)";
         else
@@ -148,6 +147,16 @@ QString DataPackage::getSrcMacAddr()
             return res;
     }
     return "";
+}
+
+QString DataPackage::getMacType()
+{
+    ETHER_HEADER *eth;
+    eth = (ETHER_HEADER *)(m_pktContent);
+    u_short type = ntohs(eth->ether_type);
+    if(0x0800 == type) return "IPv4(0x0800)";
+    else if(0x0806 == type) return "ARP(0x0806)";
+    else return "";
 }
 
 QString DataPackage::getDesIpAddr()

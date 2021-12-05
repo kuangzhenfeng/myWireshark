@@ -9,6 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     m_dataPackageCount = 0;
+    m_currentRow = -1;
     ui->setupUi(this);
     statusBar()->showMessage("myWireshark");
     ui->toolBar->addAction(ui->actionrun_and_stop);
@@ -30,7 +31,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget->setShowGrid(false);
     ui->tableWidget->verticalHeader()->setVisible(false);
     ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
-
 
     showNetworkDevices();
     m_myPcap.setCurDevice(11);   // kzf for test
@@ -74,6 +74,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    int dataSize = m_dataPackage.size();
+    for(int i = 0; i < dataSize; ++i)
+    {
+        m_dataPackage[i].resetPktContent();
+    }
+    QVector<DataPackage>().swap(m_dataPackage); // 清空m_dataPackage
     delete ui;
 }
 
@@ -134,5 +140,30 @@ void MainWindow::HandleMessage(DataPackage data)
         ui->tableWidget->item(m_dataPackageCount, i)->setBackground(color);
     }
     ++m_dataPackageCount;
+}
+
+
+void MainWindow::on_tableWidget_cellClicked(int row, int column)
+{
+    if(row == m_currentRow || row < 0)
+    {
+        return;
+    }
+    ui->treeWidget->clear();
+    m_currentRow = row;
+    QString desMac = m_dataPackage[m_currentRow].getDesMacAddr();
+    QString srcMac = m_dataPackage[m_currentRow].getSrcMacAddr();
+    QString type = m_dataPackage[m_currentRow].getMacType();
+    QString tree = "Ethernet, Src: " + srcMac + " Dst: " + desMac;
+//    QTreeWidgetItem *item = new QTreeWidgetItem(QStringList(tree));
+     QTreeWidgetItem *item = new QTreeWidgetItem(QStringList() << tree);
+     ui->treeWidget->addTopLevelItem(item);
+     item->addChild(new QTreeWidgetItem(QStringList("Destination: " + desMac)));
+     item->addChild(new QTreeWidgetItem(QStringList("Source: " + srcMac)));
+     item->addChild(new QTreeWidgetItem(QStringList("type: " + type)));
+
+
+
+
 }
 

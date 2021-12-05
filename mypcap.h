@@ -25,6 +25,8 @@ public:
     int tcpPackageHandle(const u_char *pkgContent, QString &info, int ipPackage);
     int udpPackageHandle(const u_char *pkgContent, QString &info);
     QString arpPackageHandle(const u_char *pkgContent);
+    QString dnsPackageHandle(const u_char *pkgContent);
+    QString icmpPackageHandle(const u_char *pkgContent);
 
 signals:
     void send(DataPackage data);

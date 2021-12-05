@@ -23,6 +23,8 @@ public:
 private slots:
     void on_comboBox_currentIndexChanged(int index);
 
+    void on_tableWidget_cellClicked(int row, int column);
+
 public slots:
     void HandleMessage(DataPackage data);
 
@@ -31,6 +33,7 @@ private:
     MyPcap m_myPcap;
     QVector<DataPackage> m_dataPackage;     // 数据包
     int m_dataPackageCount;                 // 数据包个数
+    int m_currentRow;                       // 当前选中的行号
 
 };
 #endif // MAINWINDOW_H
