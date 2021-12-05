@@ -29,6 +29,8 @@ public slots:
 private:
     Ui::MainWindow *ui;
     MyPcap m_myPcap;
+    QVector<DataPackage> m_dataPackage;     // 数据包
+    int m_dataPackageCount;                 // 数据包个数
 
 };
 #endif // MAINWINDOW_H

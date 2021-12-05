@@ -8,7 +8,30 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+    m_dataPackageCount = 0;
     ui->setupUi(this);
+    statusBar()->showMessage("myWireshark");
+    ui->toolBar->addAction(ui->actionrun_and_stop);
+    ui->toolBar->addAction(ui->actionclear);
+    ui->toolBar->setMovable(false);
+
+    ui->tableWidget->setColumnCount(7);
+    ui->tableWidget->verticalHeader()->setDefaultSectionSize(30);
+    QStringList title = {"NO", "Time", "Source", "Destination", "Protocol", "Length", "Info"};
+    ui->tableWidget->setHorizontalHeaderLabels(title);
+    ui->tableWidget->setColumnWidth(0, 50);
+    ui->tableWidget->setColumnWidth(1, 150);
+    ui->tableWidget->setColumnWidth(2, 300);
+    ui->tableWidget->setColumnWidth(3, 300);
+    ui->tableWidget->setColumnWidth(4, 100);
+    ui->tableWidget->setColumnWidth(5, 100);
+    ui->tableWidget->setColumnWidth(6, 1000);
+
+    ui->tableWidget->setShowGrid(false);
+    ui->tableWidget->verticalHeader()->setVisible(false);
+    ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+
     showNetworkDevices();
     m_myPcap.setCurDevice(11);   // kzf for test
     static bool bStart = false;
@@ -16,12 +39,27 @@ MainWindow::MainWindow(QWidget *parent)
         bStart = !bStart;
         if(bStart)
         {
+            // 开始
+            ui->tableWidget->clearContents();
+            ui->tableWidget->setRowCount(0);
+            m_dataPackageCount = 0;
+            int dataSize = m_dataPackage.size();
+            for(int i = 0; i < dataSize; ++i)
+            {
+                m_dataPackage[i].resetPktContent();
+            }
+            QVector<DataPackage>().swap(m_dataPackage); // 清空m_dataPackage
             int res = m_myPcap.capture();
             if(0 == res)
             {
                 statusBar()->showMessage(m_myPcap.getCurDeviceDescription());
                 ui->actionrun_and_stop->setIcon(QIcon(":/resources/stop.png"));
                 ui->comboBox->setEnabled(false);
+            }
+            else
+            {
+                bStart = !bStart;
+                m_dataPackageCount = 0;
             }
         }
         else
@@ -69,6 +107,32 @@ void MainWindow::on_comboBox_currentIndexChanged(int index)
 
 void MainWindow::HandleMessage(DataPackage data)
 {
-    qDebug() << data.getTimeStamp() << " " << data.getInfo();
+    ui->tableWidget->insertRow(m_dataPackageCount);
+    m_dataPackage.push_back(data);
+    QString type = data.getPackageType();
+    QColor color;
+    if(type == "TCP")
+        color = QColor(216, 191, 216);
+    else if(type == "UDP")
+        color = QColor(144, 238, 144);
+    else if(type == "ARP")
+        color = QColor(238, 238, 0);
+    else if(type == "DNS")
+        color = QColor(255, 255, 254);
+    else
+        color = QColor(255, 218, 185);
+
+    ui->tableWidget->setItem(m_dataPackageCount, 0, new QTableWidgetItem(QString::number(m_dataPackageCount)));
+    ui->tableWidget->setItem(m_dataPackageCount, 1, new QTableWidgetItem(data.getTimeStamp()));
+    ui->tableWidget->setItem(m_dataPackageCount, 2, new QTableWidgetItem(data.getSource()));
+    ui->tableWidget->setItem(m_dataPackageCount, 3, new QTableWidgetItem(data.getDestination()));
+    ui->tableWidget->setItem(m_dataPackageCount, 4, new QTableWidgetItem(data.getPackageType()));
+    ui->tableWidget->setItem(m_dataPackageCount, 5, new QTableWidgetItem(data.getDataLength()));
+    ui->tableWidget->setItem(m_dataPackageCount, 6, new QTableWidgetItem(data.getInfo()));
+    for(int i = 0; i < 7; ++i)
+    {
+        ui->tableWidget->item(m_dataPackageCount, i)->setBackground(color);
+    }
+    ++m_dataPackageCount;
 }
 

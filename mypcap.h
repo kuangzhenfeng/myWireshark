@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QThread>
+#include <QVector>
 #include "pcap.h"
 #include "datapackage.h"
 
@@ -12,6 +13,7 @@ class MyPcap: public QThread
     Q_OBJECT
 public:
     MyPcap();
+    ~MyPcap();
     QString getCurDeviceDescription();
     int getAllDevicesDescription(QStringList &descriptionList);
     void setCurDevice(int index);

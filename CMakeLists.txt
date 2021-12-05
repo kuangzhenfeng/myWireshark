@@ -29,6 +29,8 @@ set(PROJECT_SOURCES
         Format.h
         datapackage.h
         datapackage.cpp
+        readonlydelegate.h
+        readonlydelegate.cpp
 )
 
 ##################### my add start ##########################

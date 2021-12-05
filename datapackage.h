@@ -14,21 +14,30 @@ public:
     void setTimeStamp(QString timeStamp);
     void setInfo(QString info);
     void setPackageType(int type);
+    const u_char *getPktContent();
     void setPktContent(const u_char *pktContent, int size);
+    void resetPktContent();
+
 
 
     QString getDataLength();
     QString getTimeStamp();
     QString getInfo();
     QString getPackageType();
-//    QString getPktContent();
+    QString getSource();
+    QString getDestination();
+    QString getDesMacAddr();
+    QString getSrcMacAddr();
+    QString getDesIpAddr();
+    QString getSrcIpAddr();
 
-    const u_char *m_pktContent;
+
 
 protected:
     static QString byteToString(u_char *str, int size);
 
 private:
+    const u_char *m_pktContent;
     u_int m_dataLength;
     QString m_timeStamp;
     QString m_info;

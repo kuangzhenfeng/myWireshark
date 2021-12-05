@@ -8,6 +8,11 @@ MyPcap::MyPcap()
     m_bRun = false;
 }
 
+MyPcap::~MyPcap()
+{
+    stopCapture();
+}
+
 QString MyPcap::getCurDeviceDescription()
 {
     if(!m_pCurDevice)
@@ -116,6 +121,8 @@ void MyPcap::run()
             data.setInfo(info);
             data.setDataLength(len);
             data.setTimeStamp(timeString);
+            data.setPackageType(type);
+            data.setPktContent(m_pktData, len);
             emit send(data);
         }
 
