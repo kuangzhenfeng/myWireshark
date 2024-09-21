@@ -33,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     showNetworkDevices();
-    m_myPcap.setCurDevice(11);   // kzf for test
+    // m_myPcap.setCurDevice(11);   // kzf for test
     static bool bStart = false;
     connect(ui->actionrun_and_stop, &QAction::triggered, this, [=](){
         bStart = !bStart;
